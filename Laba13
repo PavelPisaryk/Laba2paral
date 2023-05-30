@@ -1,0 +1,38 @@
+#include <mpi.h>
+#include <vector>
+#include <iostream>
+
+int main(int argc, char* argv[])
+{
+    int rank, size;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    std::vector<int> B(size, rank); // Создаем вектор B на каждом процессе
+    std::vector<int> A(size, 0);    // Создаем вектор A на каждом процессе
+
+    // Отправляем элементы вектора B другим процессам
+    for (int i = 0; i < size; ++i) {
+        if (i == rank) {
+            continue; // Не отправляем элементы самому себе
+        }
+        MPI_Send(B.data(), size, MPI_INT, i, 0, MPI_COMM_WORLD);
+    }
+
+    // Принимаем элементы вектора B от других процессов и помещаем их в вектор A
+    for (int i = 0; i < size; ++i) {
+        if (i == rank) {
+            continue; // Не принимаем элементы от самого себя
+        }
+        MPI_Recv(&A[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+
+    // Выводим вектор A на каждом процессе
+    for (int i = 0; i < size; ++i) {
+        std::cout << "Rank " << rank << ": A[" << i << "] = " << A[i] << std::endl;
+    }
+
+    MPI_Finalize();
+    return 0;
+}
